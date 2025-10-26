@@ -1,10 +1,12 @@
 // src/components/Navbar.js
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import logo from '../images/logo.png';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import logo from "../images/logo.png";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+
+  const islogged = localStorage.getItem("token");
 
   return (
     <nav className="bg-blue-600 text-white p-4">
@@ -12,7 +14,7 @@ const Navbar = () => {
         <div className="flex items-center gap-4">
           <img src={logo} alt="CivicTrack Logo" className="h-16 w-16" />
           <Link to="/" className="text-xl font-bold">
-            CivicTrack
+            Civic Track
           </Link>
         </div>
 
@@ -52,7 +54,7 @@ const Navbar = () => {
         {/* Menu items */}
         <div
           className={`flex-col md:flex md:flex-row md:space-x-4 absolute md:static bg-blue-600 w-max rounded-md shadow-[0_8px_30px_rgba(0,0,0,0.5)] md:shadow-none border md:border-none border-gray-200 md:w-auto right-0  md:left-auto top-6 md:top-auto transition-transform duration-300 ease-in-out ${
-            isOpen ? 'flex z-8' : 'hidden'
+            isOpen ? "flex z-8" : "hidden"
           }`}
         >
           <Link
@@ -69,20 +71,33 @@ const Navbar = () => {
           >
             Report Issue
           </Link>
-          <Link
-            to="/login"
-            className="block px-4 py-2 hover:underline"
-            onClick={() => setIsOpen(false)}
-          >
-            Login
-          </Link>
-          <Link
-            to="/register"
-            className="block px-4 py-2 hover:underline"
-            onClick={() => setIsOpen(false)}
-          >
-            Register
-          </Link>
+
+          {islogged ? (
+            <Link
+              to="/user/dashboard"
+              className="block px-4 py-2 hover:underline"
+              onClick={() => setIsOpen(false)}
+            >
+              User Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="block px-4 py-2 hover:underline"
+                onClick={() => setIsOpen(false)}
+              >
+                Login
+              </Link>
+              <Link
+                to="/register"
+                className="block px-4 py-2 hover:underline"
+                onClick={() => setIsOpen(false)}
+              >
+                Register
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </nav>

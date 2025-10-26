@@ -50,6 +50,8 @@ const ReportIssue = () => {
   const [searching, setSearching] = useState(false);
   const navigate = useNavigate();
 
+  const token = localStorage.getItem("token");
+
   const handleSearch = async (e) => {
     setSearch(e.target.value);
     if (e.target.value.trim().length < 3) {
@@ -325,7 +327,7 @@ const ReportIssue = () => {
           className="w-full bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700 transition"
           disabled={submitting}
         >
-          {submitting ? "Submitting..." : "Report Issue"}
+          {token? (submitting ? "Submitting..." : "Report Issue") : navigate('/login')}
         </button>
       </form>
       <ToastContainer />

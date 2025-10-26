@@ -37,12 +37,14 @@ const Login = () => {
           body: JSON.stringify(formData),
         });
         const result = await response.json();
+        console.log(result);
         const { message, token, user } = result;
 
         if (token && message && user) {
           handleSuccess(message);
           localStorage.setItem("token", token);
           localStorage.setItem("loggedInUser", user.name);
+          localStorage.setItem("userEmail", user.email);
           setTimeout(() => {
             navigate("/report");
           }, 1000);
