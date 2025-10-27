@@ -2,18 +2,61 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const STATUS_OPTIONS = ["Pending", "In Progress", "Resolved"];
+const CATEGORIES = [
+  "Garbage", "Water Leak", "Road Safety", "Pothole", "Streetlight", "Other"
+];
+const SORT_OPTIONS = [
+  { label: "Latest first", value: "latest" },
+  { label: "Oldest first", value: "oldest" }
+];
 
 const AdminDashboard = () => {
   const [issues, setIssues] = useState([]);
+  const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null); // issue _id being edited
   const [resolutionNotes, setResolutionNotes] = useState("");
   const [status, setStatus] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
+  const [filters, setFilters] = useState({
+    status: "",
+    category: "",
+    search: "",
+    sort: "latest"
+  });
+
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
-  const name = localStorage.getItem('loggedInUser')
-  const email = localStorage.getItem('userEmail')
+  const name = localStorage.getItem("loggedInUser")
+  const email = localStorage.getItem("userEmail")
+
+  useEffect(() => {
+    // Fetch assignable users
+    fetch("http://localhost:8080/api/users?role=admin", {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(res => res.json()).then(setStaffList);
+  }, [token]);
+
+  useEffect(() => {
+    fetchIssues();
+    // eslint-disable-next-line
+  }, [filters]);
+
+  const fetchIssues = async () => {
+    setLoading(true);
+    const params = [];
+    if (filters.status) params.push(`status=${filters.status}`);
+    if (filters.category) params.push(`category=${filters.category}`);
+    if (filters.search) params.push(`search=${encodeURIComponent(filters.search)}`);
+    if (filters.sort) params.push(`sort=${filters.sort}`);
+    const query = params.length ? `?${params.join('&')}` : '';
+    const res = await fetch(`http://localhost:8080/api/issues${query}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) setIssues(await res.json());
+    setLoading(false);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -21,39 +64,24 @@ const AdminDashboard = () => {
     localStorage.removeItem("userEmail");
     localStorage.removeItem("userRole");
     navigate("/login");
-    window.location.reload(); // Hard reload to reset auth state everywhere
-  };
-
-  useEffect(() => {
-    fetchIssues();
-  }, []);
-
-  const fetchIssues = async () => {
-    setLoading(true);
-    const res = await fetch("http://localhost:8080/api/issues", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (res.ok) {
-      setIssues(await res.json());
-    }
-    setLoading(false);
+    window.location.reload();
   };
 
   const startEdit = (issue) => {
     setEditing(issue._id);
     setResolutionNotes(issue.resolutionNotes || "");
     setStatus(issue.status);
+    setAssignedTo(issue.assignedTo?._id || "");
   };
 
   const cancelEdit = () => {
     setEditing(null);
     setResolutionNotes("");
     setStatus("");
+    setAssignedTo("");
   };
 
-  // PATCH request to update status/comments
+  // PATCH request to update status/comments/assignedTo
   const saveChanges = async (id) => {
     const res = await fetch(`http://localhost:8080/api/issues/${id}`, {
       method: "PATCH",
@@ -64,6 +92,7 @@ const AdminDashboard = () => {
       body: JSON.stringify({
         status,
         resolutionNotes,
+        assignedTo
       }),
     });
     if (res.ok) {
@@ -74,23 +103,26 @@ const AdminDashboard = () => {
     }
   };
 
-  // DELETE request to remove the issue
   const deleteIssue = async (id) => {
     if (!window.confirm("Are you sure you want to delete this issue?")) return;
     const res = await fetch(`http://localhost:8080/api/issues/${id}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` }
     });
-    if (res.ok) {
-      setIssues(issues.filter((i) => i._id !== id));
-    } else {
-      alert("Delete failed");
-    }
+    if (res.ok) setIssues(issues.filter((i) => i._id !== id));
+    else alert("Delete failed");
   };
 
-  if (loading) return <div>Loading issues...</div>;
+  const handleFilter = (e) => {
+    setFilters({ ...filters, [e.target.name]: e.target.value });
+  };
+
+  if (loading)
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p className="text-gray-600 text-lg">Loading issues...</p>
+      </div>
+    );
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -109,6 +141,30 @@ const AdminDashboard = () => {
         </button>
       </div>
 
+      {/* FILTER BAR */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <select name="status" value={filters.status} onChange={handleFilter} className="border rounded px-2 py-1">
+          <option value="">All statuses</option>
+          {STATUS_OPTIONS.map((s) => (<option key={s}>{s}</option>))}
+        </select>
+        <select name="category" value={filters.category} onChange={handleFilter} className="border rounded px-2 py-1">
+          <option value="">All categories</option>
+          {CATEGORIES.map((c) => (<option key={c}>{c}</option>))}
+        </select>
+        <select name="sort" value={filters.sort} onChange={handleFilter} className="border rounded px-2 py-1">
+          {SORT_OPTIONS.map((s) => (<option key={s.value} value={s.value}>{s.label}</option>))}
+        </select>
+        <input
+          name="search"
+          type="text"
+          placeholder="Search by title"
+          value={filters.search}
+          onChange={handleFilter}
+          className="border rounded px-2 py-1"
+        />
+        <button className="bg-gray-400 px-3 py-1 rounded text-white" onClick={() => setFilters({status: "", category: "", search: "", sort: "latest"})}>Clear Filters</button>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="min-w-full border">
           <thead>
@@ -119,6 +175,8 @@ const AdminDashboard = () => {
               <th className="px-3 py-2">Image</th>
               <th className="px-3 py-2">Status</th>
               <th className="px-3 py-2">Resolution</th>
+              <th className="px-3 py-2">Location</th>
+              <th className="px-3 py-2">Assigned To</th>
               <th className="px-3 py-2">Reported By</th>
               <th className="px-3 py-2">Actions</th>
             </tr>
@@ -142,6 +200,7 @@ const AdminDashboard = () => {
                     />
                   )}
                 </td>
+                {/* Status */}
                 <td className="px-3 py-2">
                   {editing === issue._id ? (
                     <select
@@ -167,6 +226,7 @@ const AdminDashboard = () => {
                     </span>
                   )}
                 </td>
+                {/* Resolution */}
                 <td className="px-3 py-2 w-48">
                   {editing === issue._id ? (
                     <textarea
@@ -179,11 +239,40 @@ const AdminDashboard = () => {
                     <span className="text-gray-700 text-xs">{issue.resolutionNotes || "-"}</span>
                   )}
                 </td>
+                {/* Location (address, coordinates) */}
+                <td className="px-3 py-2 text-xs">
+                  {issue.location?.address || "-"}
+                  <br />
+                  {issue.location?.latitude && issue.location?.longitude
+                    ? `${issue.location.latitude}, ${issue.location.longitude}`
+                    : ""}
+                </td>
+                {/* Assigned To */}
+                <td className="px-3 py-2">
+                  {editing === issue._id ? (
+                    <select value={assignedTo} onChange={e => setAssignedTo(e.target.value)} className="border rounded p-1">
+                      <option value="">Unassigned</option>
+                      {staffList.map((staff) => (
+                        <option key={staff._id} value={staff._id}>
+                          {staff.name} ({staff.email})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span>
+                      {issue.assignedTo?.name
+                        ? `${issue.assignedTo.name} (${issue.assignedTo.email})`
+                        : <span className="text-gray-400">Unassigned</span>}
+                    </span>
+                  )}
+                </td>
+                {/* Reported by */}
                 <td className="px-3 py-2 text-xs">
                   {issue.createdBy?.name || "-"}
                   <br />
                   <span className="text-gray-400">{issue.createdBy?.email}</span>
                 </td>
+                {/* Actions */}
                 <td className="px-3 py-2 space-x-2">
                   {editing === issue._id ? (
                     <>
@@ -206,15 +295,15 @@ const AdminDashboard = () => {
                         <button
                         onClick={() => startEdit(issue)}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded"
-                      >
+                        >
                         Edit
-                      </button>
-                      <button
+                        </button>
+                        <button
                         onClick={() => deleteIssue(issue._id)}
                         className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded"
-                      >
+                        >
                         Delete
-                      </button>
+                        </button>
                       </div>
                     </>
                   )}
@@ -223,6 +312,11 @@ const AdminDashboard = () => {
             ))}
           </tbody>
         </table>
+        {issues.length === 0 && (
+          <p className="text-center text-gray-500 py-6">
+            No issues found yet.
+          </p>
+        )}
       </div>
     </div>
   );
