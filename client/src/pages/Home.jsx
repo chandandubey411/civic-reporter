@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import SnailLoader from '../components/Loader'
 import "leaflet/dist/leaflet.css";
 
 const UserDashboard = () => {
@@ -18,7 +19,9 @@ const UserDashboard = () => {
       });
   }, []);
 
-  if (loading) return <div>Loading issues...</div>;
+  if (loading) return (
+    <SnailLoader/>
+  );
 
   return (
     <div className="mt-6 grid grid-cols-1 gap-8">
