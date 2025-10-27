@@ -7,8 +7,8 @@ const UserDashboard = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
-  const name = localStorage.getItem('loggedInUser')
-  const email = localStorage.getItem('userEmail')
+  const name = localStorage.getItem("loggedInUser");
+  const email = localStorage.getItem("userEmail");
 
   // Fetch user's own issues
   useEffect(() => {
@@ -59,20 +59,8 @@ const UserDashboard = () => {
           </li>
         )}
         {userIssues.map((issue) => (
-          <li key={issue._id} className="border rounded p-4 shadow flex ">
-            {issue.imageURL && (
-              <img
-                src={
-                  issue.imageURL.startsWith("http")
-                    ? issue.imageURL
-                    : `http://localhost:8080/${issue.imageURL.replace("\\", "/")}`
-                }
-                alt={issue.title}
-                className="h-28 mt-2 rounded mr-5"
-              />
-            )}
-            <div>
-              <div className="font-semibold text-lg">{issue.title}</div>
+          <li key={issue._id} className="border rounded p-4 shadow">
+            <div className="font-semibold text-lg">{issue.title}</div>
             <div className="text-sm text-gray-700">{issue.description}</div>
             <div>
               <span className="font-semibold">Category:</span> {issue.category}
@@ -90,7 +78,29 @@ const UserDashboard = () => {
                 {issue.status}
               </span>
             </div>
-            </div>
+            {issue.imageURL && (
+              <img
+                src={
+                  issue.imageURL.startsWith("http")
+                    ? issue.imageURL
+                    : `http://localhost:8080/${issue.imageURL.replace(
+                        /\\/g,
+                        "/"
+                      )}`
+                }
+                alt={issue.title}
+                className="h-28 mt-2 rounded"
+              />
+            )}
+            {/* Resolution display */}
+            {issue.resolutionNotes && (
+              <div className="mt-2 p-2 bg-gray-100 rounded text-sm">
+                <span className="font-bold text-green-700">
+                  Admin Resolution:
+                </span>
+                <span className="ml-2">{issue.resolutionNotes}</span>
+              </div>
+            )}
           </li>
         ))}
       </ul>

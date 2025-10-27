@@ -1,5 +1,5 @@
 const Issue = require('../model/Issue');
-
+const User = require('../model/User');
 // Create new issue
 
 exports.createIssue = async (req, res) => {
@@ -52,3 +52,47 @@ exports.getUserIssues = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+
+exports.getAllIssuesWithUser = async (req, res) => {
+  try {
+    const issues = await Issue.find()
+      .populate('createdBy', 'name email role') // populates user info
+      .sort({ createdAt: -1 });
+    res.json(issues);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching issues", error: err.toString() });
+  }
+};
+
+// Update issue status or resolution (PATCH)
+exports.updateIssue = async (req, res) => {
+  try {
+    const { status, resolutionNotes } = req.body;
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (resolutionNotes !== undefined) updateData.resolutionNotes = resolutionNotes;
+
+    const updated = await Issue.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateData },
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ message: "Issue not found" });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: "Error updating issue", error: err.toString() });
+  }
+};
+
+// Delete an issue
+exports.deleteIssue = async (req, res) => {
+  try {
+    const deleted = await Issue.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "Issue not found" });
+    res.json({ message: "Issue deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Error deleting issue", error: err.toString() });
+  }
+};
+

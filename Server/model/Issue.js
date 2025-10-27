@@ -11,6 +11,7 @@ const issueSchema = new mongoose.Schema({
   },
   category: { type: String, required: true },
   status: { type: String, enum: ['Pending', 'In Progress', 'Resolved'], default: 'Pending' },
+  resolutionNotes: { type: String },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 
