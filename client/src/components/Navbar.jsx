@@ -7,6 +7,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const islogged = localStorage.getItem("token");
+  const role = localStorage.getItem('userRole');
 
   return (
     <nav className="bg-blue-600 text-white p-4">
@@ -57,7 +58,16 @@ const Navbar = () => {
             isOpen ? "flex z-8" : "hidden"
           }`}
         >
-          <Link
+          {role=== 'admin'? (<Link
+            to="/admin/dashboard"
+            className="block px-4 py-2 hover:underline"
+            onClick={() => setIsOpen(false)}
+          >
+            Admin Dashboard
+          </Link>) : 
+          (
+            <>
+              <Link
             to="/"
             className="block px-4 py-2 hover:underline"
             onClick={() => setIsOpen(false)}
@@ -98,6 +108,9 @@ const Navbar = () => {
               </Link>
             </>
           )}
+            </>
+          )}
+          
         </div>
       </div>
     </nav>
